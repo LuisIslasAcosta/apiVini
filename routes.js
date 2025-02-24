@@ -120,7 +120,7 @@ router.post('/login', (req, res) => {
 
 // 🔹 Obtener información del usuario autenticado (requiere token JWT)
 router.get('/usuario-info', verificarToken, (req, res) => {
-  connection.query('SELECT id, nombre, email, telefono FROM usuarios WHERE id = ?', [req.usuarioId], (err, results) => {
+  connection.query('SELECT id, nombre, email, telefono, rol_id FROM usuarios WHERE id = ?', [req.usuarioId], (err, results) => {
     if (err) {
       console.error('Error al obtener la información del usuario:', err);
       return res.status(500).json({ error: 'Error al obtener la información del usuario' });
@@ -130,9 +130,11 @@ router.get('/usuario-info', verificarToken, (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    // Enviar rol_id junto con los demás datos
     res.json(results[0]);
   });
 });
+
 
 // 🔹 Obtener perfil del usuario autenticado (requiere token JWT y agrega más información)
 router.get('/usuarios/perfil', verificarToken, (req, res) => {
