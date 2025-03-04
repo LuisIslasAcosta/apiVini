@@ -1,4 +1,3 @@
-// routes.js
 const express = require('express');
 const router = express.Router();
 const connection = require('./db'); // Conexión a la base de datos
@@ -51,6 +50,56 @@ router.get('/usuarios/:id', (req, res) => {
     res.json(results[0]);
   });
 });
+
+// 🔹 Editar un usuario desde Dashboard
+router.put('/usuarios/:id', verificarToken, (req, res) => {
+  const { id } = req.params;
+  const { email, telefono, rol_id } = req.body;
+
+  if (!email || !telefono || !rol_id) {
+    return res.status(400).json({ error: 'Email, teléfono y rol son obligatorios' });
+  }
+
+  const query = `
+    UPDATE usuarios 
+    SET email = ?, telefono = ?, rol_id = ?
+    WHERE id = ?
+  `;
+
+  connection.query(query, [email, telefono, rol_id, id], (err, results) => {
+    if (err) {
+      console.error('Error al actualizar usuario:', err);
+      return res.status(500).json({ error: 'Error al actualizar usuario' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ message: 'Usuario actualizado exitosamente' });
+  });
+});
+
+
+// Ruta para eliminar un usuario
+router.delete('/usuarios/:id', (req, res) => {
+  const { id } = req.params;
+
+  connection.query('DELETE FROM usuarios WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error al eliminar usuario:', err);
+      return res.status(500).json({ error: 'Error al eliminar usuario' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ message: 'Usuario eliminado exitosamente' });
+  });
+});
+
+
 
 // 🔹 Crear un nuevo usuario (registro)
 router.post('/register', (req, res) => {
@@ -134,7 +183,6 @@ router.get('/usuario-info', verificarToken, (req, res) => {
     res.json(results[0]);
   });
 });
-
 
 // 🔹 Obtener perfil del usuario autenticado (requiere token JWT y agrega más información)
 router.get('/usuarios/perfil', verificarToken, (req, res) => {
