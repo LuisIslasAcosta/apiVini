@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const connection = require('./db'); // Conexión a la base de datos
@@ -33,6 +34,24 @@ router.get('/usuarios', (req, res) => {
     res.json(results);
   });
 });
+
+router.get('/usuarios/nombre/:nombre', (req, res) => {
+  const nombre = req.params.nombre;
+  connection.query('SELECT * FROM usuarios WHERE nombre = ?', [nombre], (err, results) => {
+      if (err) {
+          console.error('Error al obtener usuario:', err);
+          res.status(500).json({ error: 'Error al obtener usuario' });
+          return;
+      }
+      if (results.length === 0) {
+          res.status(404).json({ error: 'Usuario no encontrado' });
+          return;
+      }
+      res.json(results);
+  });
+});
+
+
 
 // 🔹 Obtener un usuario por ID
 router.get('/usuarios/:id', (req, res) => {
@@ -80,7 +99,6 @@ router.put('/usuarios/:id', verificarToken, (req, res) => {
   });
 });
 
-
 // Ruta para eliminar un usuario
 router.delete('/usuarios/:id', (req, res) => {
   const { id } = req.params;
@@ -98,7 +116,6 @@ router.delete('/usuarios/:id', (req, res) => {
     res.json({ message: 'Usuario eliminado exitosamente' });
   });
 });
-
 
 
 // 🔹 Crear un nuevo usuario (registro)
@@ -184,6 +201,37 @@ router.get('/usuario-info', verificarToken, (req, res) => {
   });
 });
 
+router.post('/importacion', async (req, res) => {
+  const { usuarios } = req.body;  // Recibe el array de usuarios
+
+  if (!usuarios || !Array.isArray(usuarios)) {
+      return res.status(400).json({ error: 'El formato de datos es incorrecto' });
+  }
+
+  console.log('📥 Usuarios a importar:', usuarios);
+
+  try {
+      for (let usuario of usuarios) {
+          const { nombre, email, telefono, password, rol_id } = usuario;
+
+          if (!nombre || !email || !telefono || !password) {
+              console.warn('⚠️ Usuario omitido por datos incompletos:', usuario);
+              continue;
+          }
+
+          const hashedPassword = await bcrypt.hash(password, 10);
+          const nuevoUsuario = { nombre, email, telefono, password: hashedPassword, rol_id: rol_id || 2 };
+
+          await connection.query('INSERT INTO usuarios SET ?', nuevoUsuario);
+      }
+
+      res.status(201).json({ message: '✅ Usuarios importados exitosamente' });
+  } catch (err) {
+      console.error('❌ Error al importar usuarios:', err);
+      res.status(500).json({ error: 'Error al importar usuarios', details: err.sqlMessage });
+  }
+});
+
 // 🔹 Obtener perfil del usuario autenticado (requiere token JWT y agrega más información)
 router.get('/usuarios/perfil', verificarToken, (req, res) => {
   connection.query(`
@@ -212,4 +260,86 @@ router.get('/usuarios/perfil', verificarToken, (req, res) => {
   });
 });
 
+// 🔹 Crear un nuevo bastón
+router.post('/bastones', verificarToken, (req, res) => {
+  const { usuario_id, modelo } = req.body;
+
+  // Verificar que los parámetros sean correctos
+  if (!usuario_id || !modelo) {
+    return res.status(400).json({ error: 'El ID del usuario y el modelo son obligatorios' });
+  }
+
+  // Verificar si el usuario existe
+  connection.query('SELECT * FROM usuarios WHERE id = ?', [usuario_id], (err, results) => {
+    if (err) {
+      console.error('Error al verificar usuario:', err);
+      return res.status(500).json({ error: 'Error al verificar usuario' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Insertar el nuevo bastón
+    const nuevoBaston = { usuario_id, modelo };
+
+    connection.query('INSERT INTO bastones SET ?', nuevoBaston, (err, results) => {
+      if (err) {
+        console.error('Error al registrar bastón:', err);
+        return res.status(500).json({ error: 'Error al registrar bastón' });
+      }
+      res.status(201).json({ message: 'Bastón registrado exitosamente', id: results.insertId });
+    });
+  });
+});
+
+// 🔹 Obtener todos los bastones
+router.get('/bastones/tod', verificarToken, (req, res) => {
+  connection.query('SELECT * FROM bastones', (err, results) => {
+    if (err) {
+      console.error('Error al obtener bastones:', err);
+      return res.status(500).json({ error: 'Error al obtener bastones' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'No se encontraron bastones' });
+    }
+
+    res.json(results);  // Devuelve todos los bastones
+  });
+});
+
+// 🔹 Eliminar un bastón
+router.delete('/bastones/:id', verificarToken, (req, res) => {
+  const { id } = req.params;
+
+  // Verificar si el bastón existe
+  connection.query('SELECT * FROM bastones WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error al buscar bastón:', err);
+      return res.status(500).json({ error: 'Error al buscar bastón' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Bastón no encontrado' });
+    }
+
+    // Eliminar el bastón
+    connection.query('DELETE FROM bastones WHERE id = ?', [id], (err, results) => {
+      if (err) {
+        console.error('Error al eliminar bastón:', err);
+        return res.status(500).json({ error: 'Error al eliminar bastón' });
+      }
+
+      // Si la eliminación fue exitosa
+      res.status(200).json({ message: 'Bastón eliminado exitosamente' });
+    });
+  });
+});
+
 module.exports = router;
+
+
+
+
+
