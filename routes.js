@@ -337,6 +337,36 @@ router.delete('/bastones/:id', verificarToken, (req, res) => {
   });
 });
 
+
+
+let distanciaUltima = 0; // Variable para almacenar la última distancia recibida
+
+// Ruta para recibir la distancia del ESP32
+router.post('/distancia', (req, res) => {
+  const { distancia } = req.body;  // Extraer la distancia enviada por el ESP32
+
+  if (distancia !== undefined) {
+    distanciaUltima = distancia; // Actualizar la última distancia medida
+    console.log(`Distancia recibida: ${distancia} cm`);
+    res.status(200).json({
+      mensaje: 'Datos recibidos correctamente',
+      distancia: distanciaUltima
+    });
+  } else {
+    res.status(400).json({
+      mensaje: 'No se recibió la distancia correctamente'
+    });
+  }
+});
+
+// Ruta para obtener la última distancia medida (GET)
+router.get('/distancia', (req, res) => {
+  // Devuelve la última distancia medida
+  res.json({ distancia: distanciaUltima });
+});
+
+
+
 module.exports = router;
 
 

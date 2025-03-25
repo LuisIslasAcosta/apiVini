@@ -1,10 +1,10 @@
 const mysql = require('mysql');
 
 const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'sistema_bastones'
+  host: 'database-1.cbs4y06s6sd3.us-east-2.rds.amazonaws.com', // Sustituye por el endpoint de tu base de datos en AWS
+  user: 'ec2-user',            // Sustituye por el nombre de usuario de tu base de datos
+  password: 'Luis166Islas',     // Sustituye por la contraseña de tu base de datos
+  database: 'sistema_bastones'   // El nombre de tu base de datos
 });
 
 connection.connect((err) => {
@@ -14,5 +14,3 @@ connection.connect((err) => {
   }
   console.log('Conexión a la base de datos exitosa');
 });
-
-module.exports = connection;
