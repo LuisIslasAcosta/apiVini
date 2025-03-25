@@ -1,23 +1,14 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
-const bodyParser = require('body-parser');
-const routes = require('./routes');
 
-app.use(bodyParser.json());
+app.use(cors({
+     origin: 'http://localhost:5174', // Permite solicitudes solo desde este origen
+     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
+     allowedHeaders: ['Content-Type', 'Authorization'], // Headers permitidos
+}));
 
-// Middleware para configurar las cabeceras CORS
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
+app.use(express.json()); // Para manejar datos JSON
+app.use('/api', require('./routes')); // Rutas de tu API
 
-// Rutas de la API
-app.use('/api', routes);
-
-// Puerto
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor API a la espera de consulta, por el puerto ${PORT}`);
-});
+app.listen(3000, () => console.log('Servidor ejecutándose en el puerto 3000'));
